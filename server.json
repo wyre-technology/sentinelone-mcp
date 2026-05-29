@@ -1,0 +1,51 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.wyre-technology/sentinelone-mcp",
+  "title": "SentinelOne (Purple)",
+  "description": "Multitenant Streamable HTTP wrapper for the SentinelOne purple-mcp server.",
+  "repository": {
+    "url": "https://github.com/wyre-technology/sentinelone-mcp",
+    "source": "github"
+  },
+  "version": "0.0.0",
+  "websiteUrl": "https://github.com/wyre-technology/sentinelone-mcp",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/wyre-technology/sentinelone-mcp:0.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PORT",
+          "description": "Public listen port for the proxy (POST /mcp, GET /health)",
+          "isRequired": false,
+          "default": "8080",
+          "format": "string"
+        },
+        {
+          "name": "IDLE_EVICT_MS",
+          "description": "Idle tenant timeout before a purple-mcp child is evicted (ms)",
+          "isRequired": false,
+          "default": "900000",
+          "format": "string"
+        },
+        {
+          "name": "SPAWN_READY_TIMEOUT_MS",
+          "description": "How long to wait for a spawned child to start serving HTTP (ms)",
+          "isRequired": false,
+          "default": "30000",
+          "format": "string"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Fastify log level: debug, info, warn, error",
+          "isRequired": false,
+          "default": "info",
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
