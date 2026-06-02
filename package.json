@@ -11,7 +11,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "fastify": "^4.28.1"
+    "fastify": "^5.8.5"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
