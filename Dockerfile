@@ -66,5 +66,7 @@ COPY --from=proxy-build /app/node_modules ./node_modules
 COPY --from=proxy-build /app/dist ./dist
 COPY --from=proxy-build /app/package.json ./package.json
 
+LABEL io.modelcontextprotocol.server.name="io.github.wyre-technology/sentinelone-mcp"
+
 EXPOSE 8080
 CMD ["node", "dist/index.js"]
