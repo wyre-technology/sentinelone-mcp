@@ -1,6 +1,6 @@
 {
   "name": "@wyre-technology/sentinelone-mcp",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Multitenant Streamable HTTP wrapper for sentinel-one/purple-mcp",
   "private": true,
   "type": "module",
@@ -14,7 +14,11 @@
     "fastify": "^4.28.1"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/github": "^10.3.5",
+    "@semantic-release/npm": "^12.0.1",
     "@types/node": "^22.7.4",
+    "semantic-release": "^24.2.0",
     "typescript": "^5.6.2"
   }
 }
