@@ -10,7 +10,13 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "declaration": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "types": [
+      "node"
+    ],
+    "ignoreDeprecations": "6.0"
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }
