@@ -33,7 +33,12 @@ const PORT = Number(process.env.PORT ?? 8080);
 const PURPLE_MCP_DIR = process.env.PURPLE_MCP_DIR ?? "/opt/purple-mcp";
 const PURPLE_MCP_PYTHON =
   process.env.PURPLE_MCP_PYTHON ?? `${PURPLE_MCP_DIR}/.venv/bin/python`;
-const IDLE_EVICT_MS = Number(process.env.IDLE_EVICT_MS ?? 15 * 60 * 1000); // 15 min
+// Keep a spawned purple-mcp child warm for 60 min by default. The child has a
+// heavy (~10s+) cold start (pandas/fastmcp/uvicorn imports), and the gateway
+// enforces a short per-vendor tool-fetch timeout — so an aggressive idle evict
+// makes the first call after each gap pay that cold start and risk a gateway
+// timeout. A longer TTL keeps steady-state traffic on a warm child.
+const IDLE_EVICT_MS = Number(process.env.IDLE_EVICT_MS ?? 60 * 60 * 1000); // 60 min
 const SPAWN_READY_TIMEOUT_MS = Number(process.env.SPAWN_READY_TIMEOUT_MS ?? 30_000);
 
 // Header names the gateway forwards. Match vendor-config.ts headerMapping.

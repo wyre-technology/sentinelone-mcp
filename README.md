@@ -12,7 +12,7 @@ This image bundles `purple-mcp` plus a small Node/Fastify proxy. The proxy:
 2. Reads `x-purplemcp-token` and `x-purplemcp-base-url` from each incoming request.
 3. Lazily spawns one `purple-mcp --mode streamable-http` child per `(token, base-url)` tenant on a private loopback port, with the right env vars set.
 4. Proxies the request body to that child and streams the response back.
-5. Evicts idle children after 15 minutes (`IDLE_EVICT_MS`).
+5. Evicts idle children after 60 minutes (`IDLE_EVICT_MS`).
 
 The result is a single container that the gateway can talk to like any other vendor MCP server.
 
@@ -23,7 +23,7 @@ The result is a single container that the gateway can talk to like any other ven
 | `PORT` | `8080` | Public listen port. |
 | `PURPLE_MCP_DIR` | `/opt/purple-mcp` | Where purple-mcp source + venv live. |
 | `PURPLE_MCP_PYTHON` | `/opt/purple-mcp/.venv/bin/python` | Python interpreter from the upstream venv. |
-| `IDLE_EVICT_MS` | `900000` | Idle tenant timeout. |
+| `IDLE_EVICT_MS` | `3600000` | Idle tenant timeout (60 min). Longer keeps children warm and avoids repeated cold starts. |
 | `SPAWN_READY_TIMEOUT_MS` | `30000` | How long to wait for a child to start serving HTTP. |
 | `LOG_LEVEL` | `info` | Fastify log level. |
 
