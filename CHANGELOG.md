@@ -13,3 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Header-based credential injection (`x-purplemcp-token`, `x-purplemcp-base-url`).
 - Multi-stage Dockerfile bundling `uv`-installed `purple-mcp` plus the Node proxy.
 - GitHub Actions workflow that builds and publishes the image to `ghcr.io/wyre-technology/sentinelone-mcp`.
+
+### Fixed
+- **purple-mcp child failed to spawn (`spawn … ENOENT`), so the gateway returned `HTTP 502 for sentinelone` on tool discovery and clients saw no SentinelOne tools.** The `uv`-built virtualenv pointed `.venv/bin/python` at a uv-managed CPython living outside `/opt/purple-mcp`, leaving a dangling symlink once only `/opt/purple-mcp` was copied into the runtime stage. Pin `uv` to the system interpreter (`UV_PYTHON_PREFERENCE=only-system`, `UV_PYTHON_DOWNLOADS=never`, `uv sync --python /usr/local/bin/python3.12`) so the venv interpreter exists in the runtime image, and add a build-time smoke test (`purple_mcp.cli --help`) that fails the build if it ever regresses.
+- Spawn failures no longer crash the whole wrapper. The child `ChildProcess` `'error'` event is now handled: the failure is scoped to the offending request (clean `502` / `-32002`), other tenants keep serving, and the next request retries a fresh spawn. Previously an unhandled `'error'` event threw, killing the process for all tenants and triggering a container restart loop.

@@ -72,11 +72,23 @@ function hashCreds(token: string, baseUrl: string): string {
   return createHash("sha256").update(`${token}\0${baseUrl}`).digest("hex").slice(0, 16);
 }
 
-/** Wait until child's HTTP server is accepting connections on /mcp (or /). */
-async function waitForReady(port: number, timeoutMs: number): Promise<void> {
+/**
+ * Wait until child's HTTP server is accepting connections on /mcp (or /).
+ *
+ * `getSpawnError` lets the caller surface a child spawn failure (e.g. ENOENT
+ * when the interpreter path is missing) so we fail fast with the real error
+ * instead of polling a dead port until the full timeout elapses.
+ */
+async function waitForReady(
+  port: number,
+  timeoutMs: number,
+  getSpawnError?: () => Error | null,
+): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   const url = `http://127.0.0.1:${port}/mcp`;
   while (Date.now() < deadline) {
+    const spawnErr = getSpawnError?.();
+    if (spawnErr) throw spawnErr;
     try {
       // Any HTTP response (even 4xx) means the server is up.
       const res = await fetch(url, {
@@ -150,12 +162,27 @@ async function getOrSpawnChild(token: string, baseUrl: string): Promise<TenantCh
   proc.stderr?.on("data", (chunk) => {
     process.stderr.write(`[s1:${credHash}:err] ${chunk}`);
   });
+  // A spawn failure — most commonly ENOENT when PURPLE_MCP_PYTHON points at a
+  // missing interpreter — emits an 'error' event on the child. With NO listener
+  // Node re-throws it as an uncaught exception, crashing the ENTIRE wrapper and
+  // taking every other tenant down with it (followed by a container restart).
+  // Capture it here so the failure stays scoped to THIS request: record it,
+  // clean up, and let waitForReady() surface it so getOrSpawnChild rejects and
+  // the /mcp handler returns a clean 502 for this tenant. The next request
+  // retries a fresh spawn.
+  let spawnError: Error | null = null;
+  proc.once("error", (err) => {
+    spawnError = err;
+    process.stderr.write(`[s1:${credHash}] purple-mcp failed to spawn: ${err}\n`);
+    children.delete(credHash);
+  });
+
   proc.on("exit", (code, signal) => {
     process.stderr.write(`[s1:${credHash}] purple-mcp exited code=${code} signal=${signal}\n`);
     children.delete(credHash);
   });
 
-  const ready = waitForReady(port, SPAWN_READY_TIMEOUT_MS);
+  const ready = waitForReady(port, SPAWN_READY_TIMEOUT_MS, () => spawnError);
   const child: TenantChild = {
     port,
     proc,

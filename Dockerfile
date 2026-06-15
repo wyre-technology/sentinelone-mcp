@@ -18,9 +18,22 @@
 # vendor MCP server (POST http://gwp-sentinelone:8080/mcp).
 
 # ---- Stage 1: install purple-mcp into a virtualenv via uv ----
+# The uv image and the runtime stage are BOTH built on python:3.12-slim-bookworm,
+# so the system interpreter lives at /usr/local/bin/python3.12 in both. We pin uv
+# to that system python (UV_PYTHON_PREFERENCE=only-system + UV_PYTHON_DOWNLOADS=never)
+# so the venv's bin/python symlinks to a path that ALSO exists in the runtime image.
+#
+# Without this, uv defaults to downloading its own managed CPython into
+# ~/.local/share/uv/python/... and points the venv there. That directory is NOT
+# under /opt/purple-mcp, so copying only /opt/purple-mcp into the runtime stage
+# leaves /opt/purple-mcp/.venv/bin/python as a DANGLING symlink — and the proxy
+# crashes with `spawn /opt/purple-mcp/.venv/bin/python ENOENT` on the first tool
+# call, which the gateway surfaces to clients as "HTTP 502 for sentinelone".
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS upstream
 
-ENV PURPLE_MCP_REF=main
+ENV PURPLE_MCP_REF=main \
+    UV_PYTHON_PREFERENCE=only-system \
+    UV_PYTHON_DOWNLOADS=never
 WORKDIR /opt
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
@@ -29,7 +42,7 @@ RUN git clone --depth=1 --branch "${PURPLE_MCP_REF}" \
       https://github.com/Sentinel-One/purple-mcp.git /opt/purple-mcp \
  && cd /opt/purple-mcp \
  && git submodule update --init --recursive --depth=1 \
- && uv sync --locked --no-dev
+ && uv sync --locked --no-dev --python /usr/local/bin/python3.12
 
 # ---- Stage 2: build the Node proxy ----
 FROM node:22-bookworm-slim AS proxy-build
@@ -59,6 +72,12 @@ RUN apt-get update \
 COPY --from=upstream /opt/purple-mcp /opt/purple-mcp
 ENV PURPLE_MCP_DIR=/opt/purple-mcp \
     PURPLE_MCP_PYTHON=/opt/purple-mcp/.venv/bin/python
+
+# Build-time smoke test: run the venv interpreter through the EXACT module the
+# proxy spawns at runtime. If the cross-stage copy ever leaves the venv's python
+# as a dangling symlink again, this fails the build here instead of shipping an
+# image that crashes with `spawn ... ENOENT` (→ gateway 502) on the first call.
+RUN "${PURPLE_MCP_PYTHON}" -m purple_mcp.cli --help > /dev/null
 
 # Bring in the compiled proxy
 WORKDIR /app
