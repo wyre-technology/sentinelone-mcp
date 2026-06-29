@@ -45,7 +45,7 @@ RUN git clone --depth=1 --branch "${PURPLE_MCP_REF}" \
  && uv sync --locked --no-dev --python /usr/local/bin/python3.12
 
 # ---- Stage 2: build the Node proxy ----
-FROM node:22-bookworm-slim AS proxy-build
+FROM node:26-bookworm-slim AS proxy-build
 WORKDIR /app
 COPY package.json package-lock.json* tsconfig.json ./
 RUN npm install
@@ -53,7 +53,7 @@ COPY src ./src
 RUN npm run build
 
 # ---- Stage 3: runtime image ----
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
