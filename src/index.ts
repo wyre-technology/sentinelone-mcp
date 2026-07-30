@@ -40,6 +40,16 @@ const PURPLE_MCP_PYTHON =
 // timeout. A longer TTL keeps steady-state traffic on a warm child.
 const IDLE_EVICT_MS = Number(process.env.IDLE_EVICT_MS ?? 60 * 60 * 1000); // 60 min
 const SPAWN_READY_TIMEOUT_MS = Number(process.env.SPAWN_READY_TIMEOUT_MS ?? 30_000);
+// Hard cap on distinct concurrent tenant children. Without this, a burst of
+// distinct tenants can spawn unbounded purple-mcp processes (each with real
+// memory/CPU footprint), risking resource exhaustion for the whole gateway.
+// We deliberately reject NEW tenant capacity rather than evicting an existing
+// child to make room: there's no in-flight/"busy" tracking on TenantChild
+// today (only lastUsed, bumped at request start), so an LRU-style evict could
+// kill a child mid-flight on a concurrent request from that same tenant.
+// Rejecting is safe; evicting-to-make-room is a bigger design decision that
+// needs real busy-tracking first.
+const MAX_CHILDREN = Number(process.env.MAX_CHILDREN ?? 50);
 
 // Header names the gateway forwards. Match vendor-config.ts headerMapping.
 const HEADER_TOKEN = "x-purplemcp-token";
@@ -118,6 +128,15 @@ async function getOrSpawnChild(token: string, baseUrl: string): Promise<TenantCh
   if (existing) {
     existing.lastUsed = Date.now();
     return existing;
+  }
+
+  // Cache miss: we're about to spawn a NEW tenant child. If we're already at
+  // capacity, refuse rather than evict — see MAX_CHILDREN comment above for
+  // why eviction isn't safe here.
+  if (children.size >= MAX_CHILDREN) {
+    throw new Error(
+      `Tenant capacity limit reached (${MAX_CHILDREN} concurrent SentinelOne tenants); try again shortly`,
+    );
   }
 
   const port = await allocatePort();
@@ -227,6 +246,7 @@ const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? "info" } });
 app.get("/health", async () => ({
   status: "ok",
   tenants: children.size,
+  maxTenants: MAX_CHILDREN,
 }));
 
 // We accept the request body as a Buffer so we can forward it verbatim

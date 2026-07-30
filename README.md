@@ -25,6 +25,7 @@ The result is a single container that the gateway can talk to like any other ven
 | `PURPLE_MCP_PYTHON` | `/opt/purple-mcp/.venv/bin/python` | Python interpreter from the upstream venv. |
 | `IDLE_EVICT_MS` | `3600000` | Idle tenant timeout (60 min). Longer keeps children warm and avoids repeated cold starts. |
 | `SPAWN_READY_TIMEOUT_MS` | `30000` | How long to wait for a child to start serving HTTP. |
+| `MAX_CHILDREN` | `50` | Cap on distinct concurrent tenant children. A new-tenant spawn beyond the cap is rejected (`502`) rather than evicting an existing child. |
 | `LOG_LEVEL` | `info` | Fastify log level. |
 
 ## Request headers
