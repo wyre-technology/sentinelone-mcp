@@ -18,10 +18,11 @@
 # vendor MCP server (POST http://gwp-sentinelone:8080/mcp).
 
 # ---- Stage 1: install purple-mcp into a virtualenv via uv ----
-# The uv image and the runtime stage are BOTH built on python:3.12-slim-bookworm,
-# so the system interpreter lives at /usr/local/bin/python3.12 in both. We pin uv
-# to that system python (UV_PYTHON_PREFERENCE=only-system + UV_PYTHON_DOWNLOADS=never)
-# so the venv's bin/python symlinks to a path that ALSO exists in the runtime image.
+# The uv image and the runtime stage must BOTH be built on the same python
+# minor version, so the system interpreter lives at the same path in both. We
+# pin uv to that system python (UV_PYTHON_PREFERENCE=only-system +
+# UV_PYTHON_DOWNLOADS=never) so the venv's bin/python symlinks to a path that
+# ALSO exists in the runtime image.
 #
 # Without this, uv defaults to downloading its own managed CPython into
 # ~/.local/share/uv/python/... and points the venv there. That directory is NOT
@@ -29,7 +30,18 @@
 # leaves /opt/purple-mcp/.venv/bin/python as a DANGLING symlink — and the proxy
 # crashes with `spawn /opt/purple-mcp/.venv/bin/python ENOENT` on the first tool
 # call, which the gateway surfaces to clients as "HTTP 502 for sentinelone".
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS upstream
+#
+# 2026-08-20 incident: this stage was left pinned to python3.12 when an
+# unreviewed dependabot docker-group bump (#27, 2026-07-16) moved the runtime
+# stage below from python:3.12-slim to python:3.14-slim, silently breaking the
+# invariant above. It went undetected for over a month because a real Docker
+# build only runs when semantic-release actually cuts a version (most pushes
+# in between were skipped, not passing) -- the build-time smoke test below did
+# its job the moment a real build finally ran, failing loudly (exit 127,
+# `/opt/purple-mcp/.venv/bin/python: not found`) instead of shipping a broken
+# image. Keep this stage's python tag and the runtime stage's FROM tag in
+# lockstep on every future base-image bump.
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS upstream
 
 ENV PURPLE_MCP_REF=main \
     UV_PYTHON_PREFERENCE=only-system \
@@ -42,7 +54,7 @@ RUN git clone --depth=1 --branch "${PURPLE_MCP_REF}" \
       https://github.com/Sentinel-One/purple-mcp.git /opt/purple-mcp \
  && cd /opt/purple-mcp \
  && git submodule update --init --recursive --depth=1 \
- && uv sync --locked --no-dev --python /usr/local/bin/python3.12
+ && uv sync --locked --no-dev --python /usr/local/bin/python3.14
 
 # ---- Stage 2: build the Node proxy ----
 FROM node:26-bookworm-slim AS proxy-build
