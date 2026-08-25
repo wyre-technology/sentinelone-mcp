@@ -25,10 +25,11 @@
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:net";
 import Fastify from "fastify";
 import { verifyS2sHeader, S2S_HEADER } from "./s2s-verify.js";
+import { hashCreds } from "./tenant-key.js";
 
 const S2S_SECRET = process.env.CONDUIT_S2S_SECRET || "";
 
@@ -84,10 +85,6 @@ function allocatePort(): Promise<number> {
       }
     });
   });
-}
-
-function hashCreds(token: string, baseUrl: string): string {
-  return createHash("sha256").update(`${token}\0${baseUrl}`).digest("hex").slice(0, 16);
 }
 
 /**
