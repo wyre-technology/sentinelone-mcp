@@ -1,5 +1,5 @@
 {
-  "name": "@wyre-technology/sentinelone-mcp",
+  "name": "@wyre-ai/sentinelone-mcp",
   "version": "0.0.0",
   "description": "Multitenant Streamable HTTP wrapper for sentinel-one/purple-mcp",
   "private": true,

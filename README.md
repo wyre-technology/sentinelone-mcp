@@ -40,7 +40,7 @@ The gateway must forward these headers on every `/mcp` request:
 ## Build
 
 ```bash
-docker build -t ghcr.io/wyre-technology/sentinelone-mcp:latest .
+docker build -t ghcr.io/wyre-ai/sentinelone-mcp:latest .
 ```
 
 ## License

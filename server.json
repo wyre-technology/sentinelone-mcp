@@ -1,18 +1,18 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.wyre-technology/sentinelone-mcp",
+  "name": "io.github.WYRE-AI/sentinelone-mcp",
   "title": "SentinelOne (Purple)",
   "description": "Multitenant Streamable HTTP wrapper for the SentinelOne purple-mcp server.",
   "repository": {
-    "url": "https://github.com/wyre-technology/sentinelone-mcp",
+    "url": "https://github.com/WYRE-AI/sentinelone-mcp",
     "source": "github"
   },
   "version": "0.0.0",
-  "websiteUrl": "https://github.com/wyre-technology/sentinelone-mcp",
+  "websiteUrl": "https://github.com/WYRE-AI/sentinelone-mcp",
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/wyre-technology/sentinelone-mcp:0.0.0",
+      "identifier": "ghcr.io/wyre-ai/sentinelone-mcp:0.0.0",
       "transport": {
         "type": "stdio"
       },
